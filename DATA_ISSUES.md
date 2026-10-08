@@ -1,9 +1,9 @@
 # Data issues found
 
-Data: NYC 311 service requests, 2026-09-01 to 2026-09-07
-Downloaded: 2026-10-01
-Rows: 71,830 | Columns: 44
-Note: the source dataset is updated daily, so a later download may differ.
+- Data: NYC 311 service requests, 2026-09-01 to 2026-09-07
+- Downloaded: 2026-10-01
+- Rows: 71,830 | Columns: 44
+- Note: the source dataset is updated daily, so a later download may differ.
 
 ## Checked and clean
 
@@ -13,7 +13,7 @@ Note: the source dataset is updated daily, so a later download may differ.
 - status vs closed_date: every Closed request has a closed_date (64,898 of 64,898)
 - The 5,968 empty closed_date values (8.3%) all belong to requests that are not Closed (In Progress 4,013, Open 1,839, Assigned 83, Pending 33). Expected missingness, not an error.
 - Columns with 0.0% missing (rounded to one decimal): unique_key, created_date, agency, agency_name, complaint_type, status, community_board, police_precinct, open_data_channel_type. borough and park_borough also show 0.0% missing but contain the placeholder "Unspecified" (see issue 7).
-- agency and agency_name: 14 distinct values each and 14 distinct pairs, so one-to-one (agency_name is redundant)
+- agency and agency_name: 14 distinct values each, 14 distinct pairs, so one-to-one (agency_name is redundant)
 - latitude and location: empty on exactly the same 1,301 rows (70,529 have both, 1,301 have neither, 0 have only one)
 - location: text like POINT (longitude latitude), longitude first. Matches latitude and longitude on all 70,529 rows that have a location (within 0.000001 degrees). Redundant copy.
 
