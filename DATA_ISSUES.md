@@ -1,64 +1,35 @@
-# Data issues
+# Decisions
 
-- Data: NYC 311 requests, 2026-09-01 to 2026-09-07 (downloaded 2026-10-01)
-- Size: 71,830 rows, 44 columns
+How the cleaning code (`clean.py`) will handle each issue in `DATA_ISSUES.md`.
 
-## Clean
+## Rules
 
-- unique_key: no missing, no repeats
-- created_date: no missing, all within Sept 1-7
-- closed_date: all parse. Empty only on non-Closed requests (5,968), which is expected
-- Every Closed request has a closed_date (64,898)
-- incident_zip: all 5 digits (602 empty)
-- latitude, longitude: all numeric, all inside NYC
-- city, complaint_type: no stray spaces. city has no spelling variants
+- The raw file is never edited. Cleaning writes a new file to `data/processed/`.
+- FIX: change the value. FLAG: keep the value and add a marker column. DROP: remove it. LEAVE: keep it as is.
+- Placeholder text that means "unknown" (like "Unspecified") becomes an empty value, so `isna()` can find it.
+- Keep data when in doubt. No column is dropped in this project.
 
-## Issues
+## Table
 
-| #   | Column                       | Problem                                   | Rows      | Notes                                                                                                                                                                                                                                                                                                                                                                            |
-| --- | ---------------------------- | ----------------------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | status, closed_date          | has a close date but status is not Closed | 964       | DOB Open 692 (close date = created date, looks fake), DOB Assigned 118, DEP In Progress 114, DOT Assigned 28, other 12                                                                                                                                                                                                                                                           |
-| 2   | closed_date                  | closed before created, under 1 minute     | 23        | All DEP. The seconds were dropped                                                                                                                                                                                                                                                                                                                                                |
-| 3   | closed_date                  | closed before created, about 9 hours      | 1         | DOT, key 70290962                                                                                                                                                                                                                                                                                                                                                                |
-| 4   | closed_date                  | closed about 2 days before created        | 1         | DOT, key 70273435 (also in #1)                                                                                                                                                                                                                                                                                                                                                   |
-| 5   | status                       | "Unspecified"                             | 7         | DEP 5, DPR 1, NYPD 1                                                                                                                                                                                                                                                                                                                                                             |
-| 6   | 9 columns                    | nearly empty (95% to 99.9%)               | 9         | taxi_company_borough, due_date, facility_type, road_ramp, bridge_highway_direction, bridge_highway_name, bridge_highway_segment, taxi_pick_up_location, vehicle_type. Always filled for their complaint type: the 4 highway columns (Highway Condition), vehicle_type (Abandoned Vehicle, Noise - Vehicle). Only sometimes filled: due_date, facility_type, taxi_company_borough |
-| 7   | borough, park_borough        | "Unspecified"                             | 80        | Same 80 rows in both. 76 also have no coordinates                                                                                                                                                                                                                                                                                                                                |
-| 8   | x, y state-plane coordinates | only one of the pair is filled            | 16        | 11 are DOT Street Condition, which is only 2.4% of all rows                                                                                                                                                                                                                                                                                                                      |
-| 9   | complaint_type               | same complaint, two spellings             | 1,947     | PLUMBING (HPD) vs Plumbing (DOB). ELEVATOR (HPD) vs Elevator (DOB)                                                                                                                                                                                                                                                                                                               |
-| 10  | 5 columns                    | placeholder text                          | see notes | park_facility_name "Unspecified" 71,745. open_data_channel_type "UNKNOWN" 5,164. police_precinct "Unspecified" 1,301. location_type "Unknown" 25. descriptor_2 "Unknown" 1                                                                                                                                                                                                       |
+| Issue                                                         | Decision | Marker or new column             | Why                                                                                                                           |
+| ------------------------------------------------------------- | -------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1. Close date but status not Closed (964)                     | FLAG     | `closed_date_suspect`            | We cannot tell a system error from a real close. Keep the value, leave flagged rows out of time-to-close.                     |
+| 2, 3, 4. Closed before created (25)                           | FLAG     | `closed_before_created`          | We cannot tell which date is wrong.                                                                                           |
+| 5. status "Unspecified" (7)                                   | FLAG     | covered by `closed_date_suspect` | All 7 rows are already inside issue 1. Not sure it is a placeholder, so the word stays.                                       |
+| 6. 9 nearly empty columns                                     | LEAVE    | none                             | Their values are valid. Empty means "does not apply" or "not entered".                                                        |
+| 7. borough "Unspecified" (80)                                 | FIX      | none                             | The word becomes empty, so a group-by does not show a sixth borough.                                                          |
+| 8. Only one state-plane coordinate (16)                       | FLAG     | `coord_pair_incomplete`          | One coordinate alone cannot locate a point. Keep the values.                                                                  |
+| 9. complaint_type spelling (1,947)                            | FIX      | `complaint_type_clean`           | Trim and lowercase into a new column. Keep the original and keep `agency`.                                                    |
+| 10. Placeholder text in 5 columns                             | FIX      | none                             | The word becomes empty in `park_facility_name`, `police_precinct`, `open_data_channel_type`, `location_type`, `descriptor_2`. |
+| Empty closed_date on non-Closed                               | LEAVE    | none                             | Empty is meaningful: not closed yet.                                                                                          |
+| Exact-copy columns: `agency_name`, `location`, `park_borough` | LEAVE    | none                             | Nothing is lost by keeping them. The Phase 5 schema can check that each copy still matches its source.                        |
 
-`isna()` cannot see the placeholders in #5, #7 and #10.
+## Types
 
-## Redundant columns
+- Dates become datetimes.
+- ZIP stays text.
+- latitude and longitude become numbers.
 
-- agency_name = agency
-- location = latitude + longitude
-- park_borough = borough (identical on all rows)
+## Drops
 
-## Good to know
-
-- 1,301 rows have no coordinates. latitude, longitude and location are always empty together.
-- city mixes boroughs, neighborhoods and "NEW YORK". It is not a borough column, so use borough.
-- Close times are often recorded to the minute: DEP 92%, DOB 65%, DOT 50%.
-- DOB: all 2,346 requests have a close date, but only 1,536 are Closed. On Assigned rows the close date often equals the last update (not verified).
-- Time-to-close is biased low for recent requests, because they had less time to close.
-
-## Decided
-
-- FLAG closed-before-created rows (25). Keep the value, add a marker.
-- FLAG the 692 DOB Open rows (close date looks fake). Keep the value, leave them out of time-to-close.
-- LEAVE empty closed_date on non-Closed requests.
-- FIX complaint_type spelling in a new column, complaint_type_clean (trimmed, lowercase). Keep agency.
-- DROP park_borough.
-
-## Open (Phase 3)
-
-- Issue 1 (the other 272 rows), 5, 6, 7, 8, 10
-- Drop candidates: agency_name, location, park_facility_name
-
-## Not pursued
-
-- 0-seconds table for the remaining agencies. DEP, DOB and DOT already show the pattern.
-
-Status: Checking and documenting issue is done.
+None.
