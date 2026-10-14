@@ -18,12 +18,12 @@ NUMBER_COLUMNS = ["latitude", "longitude",
 
 
 def convert_types(df):
-    """Dates become datetimes, coordinates become numbers. ZIP stays text."""
+
     df = df.copy()
-    # NEW: .copy() makes a separate copy, so the DataFrame passed in is not changed.
+
     for col in DATE_COLUMNS:
-        df[col] = pd.to_datetime(df[col], errors=___)
+        df[col] = pd.to_datetime(df[col], errors="coerce")
         # NEW: to_datetime turns date text into real datetimes. errors says what to do with a value that can't be converted.
     for col in NUMBER_COLUMNS:
-        df[col] = pd.to_numeric(df[col], errors=___)
+        df[col] = pd.to_numeric(df[col], errors="coerce")
     return df
