@@ -59,3 +59,12 @@ def add_complaint_type_clean(df):
     df["complaint_type_clean"]=(df["complaint_type"].str.strip().str.lower().str.replace(r"\s+", " ", regex=True))
     return df 
 
+"add flag "
+def add_flags(df):
+    df = df.copy()
+
+    df["closed_date_suspect"] = df["closed_date"].notna() & (df["status"] != "Closed")
+    df["closed_before_created"] = df["closed_date"] < df["created_date"] 
+    df["coord_pair_incomplete"] = ( df["x_coordinate_state_plane"].isna() != df["y_coordinate_state_plane"].isna() )
+
+    return df
