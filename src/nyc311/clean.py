@@ -4,7 +4,7 @@ import pandas as pd
 
 
 def load_raw(path):
-    """Read the raw 311 CSV. Every column stays text."""
+    "Read the raw 311 CSV. Every column stays text"
 
     path = Path(path)
 
@@ -22,7 +22,7 @@ NUMBER_COLUMNS = ["latitude", "longitude",
 
 
 def convert_types(df):
-    """Dates become datetimes, coordinates become numbers. ZIP stays text."""
+    "Dates become datetimes, coordinates become numbers. ZIP stays text"
 
     df = df.copy()
 
@@ -46,9 +46,16 @@ PLACEHOLDER_COLUMNS = {
 
 
 def placeholders_to_missing(df):
-    """Turn "unknown" placeholder words into real empty values."""
+    "Turn (unknown) placeholder words into real empty values"
     df = df.copy()
     for col, word in PLACEHOLDER_COLUMNS.items():
         df[col] = df[col].mask(df[col] == word)
         
     return df
+
+"add complaint type"
+def add_complaint_type_clean(df):
+    df = df.copy()
+    df["complaint_type_clean"]=(df["complaint_type"].str.strip().str.lower().str.replace(r"\s+", " ", regex=True))
+    return df 
+
