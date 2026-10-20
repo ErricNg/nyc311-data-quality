@@ -1,6 +1,10 @@
 import pandera.pandas as pa
 #pandera-> rules clean table must follow 
 
+import pandas as pd
+from src.nyc311.clean import OUT_PATH, RAW_PATH, load_raw
+
+
 BOROUGHS = ["BROOKLYN", "QUEENS", "MANHATTAN", "BRONX", "STATEN ISLAND"]
 
 schema = pa.DataFrameSchema(
@@ -21,3 +25,25 @@ schema = pa.DataFrameSchema(
         "closed_date_suspect": pa.Column(bool),
     }
 )
+
+
+def main():
+    #   Run the same schema on the raw file (expect FAIL) and the cleaned file (expect pass).                       
+    for name, df in [("raw", load_raw(RAW_PATH)),          ("clean", pd.read_parquet(OUT_PATH))]:
+        #           read raw data and return as a table        read the clean file that main() saved 
+
+        try:
+            schema.validate(df, lazy=True)
+            #                    collects every failure instead of stopping at the first one.
+
+            print(f"{name}: passes")
+
+        except pa.errors.SchemaErrors as e:
+
+            print(f"{name}: FAILS")
+            print(e.failure_cases[["column", "check"]].value_counts())
+            #     a table of every broken rule, with the column and the check that failed.
+
+
+if __name__ == "__main__":
+    main()
