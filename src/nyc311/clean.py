@@ -58,6 +58,7 @@ def placeholders_to_missing(df):
     df = df.copy()
 
     for col, word in PLACEHOLDER_COLUMNS.items():
+        #                make cell empty whenever condition is true 
         df[col] = df[col].mask(df[col] == word)
         
     return df
