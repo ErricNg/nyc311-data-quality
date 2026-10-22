@@ -162,8 +162,18 @@ def test_clean_is_idempotent():
 test the schema
 """
 
-def make_good():
-    """A tiny table that follows every schema rule."""
+def very_good():
+    """A tiny table that follows every schema rule
+    Column	            Row 0	Row 1
+    unique_key	        1	    2
+    incident_zip	    10001	empty
+    borough	            QUEENS	empty
+    latitude	        40.7	40.8
+    longitude	        -73.9	-73.8
+    closed_date_suspect	False	True
+    
+    
+    """
     return pd.DataFrame({
         "unique_key": ["1", "2"],
         "incident_zip": ["10001", None],
@@ -175,10 +185,22 @@ def make_good():
 
 
 def test_schema_catches_bad_zip():
-    good = make_good()
+    good = very_good()
     schema.validate(good)
-    # NEW: if validate finds no problem, it returns quietly. A problem raises an error, which would fail this test.
+    #if validate finds no problem, it returns quietly. A problem raises an error, which would fail this test.
+    
     bad = good.copy()
     bad["incident_zip"] = ["1000", None]
     with pytest.raises(pa.errors.SchemaError):
         schema.validate(bad)
+
+
+# test if status unspecified is kept 
+def test_status_unspecified_is_kept():
+    df = make_raw().assign(status=["Unspecified", "Open"])
+    #old status row 0 ->closed , row 1 -> open
+    #new        row 0 ->Unspecified , row 1 -> open
+
+    out = placeholders_to_missing(df)
+    assert out["status"].iloc[0] == "Unspecified"
+    assert out["status"].isna().sum() == 0
