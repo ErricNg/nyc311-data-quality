@@ -1,7 +1,7 @@
 import pandas as pd
 
-from src.nyc311.clean import PLACEHOLDER_COLUMNS, placeholders_to_missing, add_complaint_type_clean , add_flags
-
+import pytest 
+from src.nyc311.clean import PLACEHOLDER_COLUMNS, placeholders_to_missing, add_complaint_type_clean , add_flags , load_raw , DATE_COLUMNS, NUMBER_COLUMNS, convert_types, clean
 """
 pattern for checking :
 df =... the input we made 
@@ -65,3 +65,72 @@ def test_flags_mark_the_right_rows():
 
     #does 1 of them empty
     assert out["coord_pair_incomplete"].sum() == 2
+
+    #test 4 load raw
+
+def test_load_raw_missing_file_raises():
+        #check if load raw raise the right error (when i give a file that doesnt exist)
+    with pytest.raises(FileNotFoundError):
+
+        load_raw("data/raw/does_not_exist.csv")
+
+def test_convert_types_keeps_zip_as_text():
+    #A table conver everything to text like the raw file
+    df = pd.DataFrame({col: ["2026-09-01 10:00:00"] for col in DATE_COLUMNS})
+                                                     
+    for col in NUMBER_COLUMNS:
+        df[col] = ["40.7"]
+    df["incident_zip"] = ["07302"]
+    """
+    Column	                            Value (all text)
+    created_date	                    2026-09-01 10:00:00
+    closed_date	                        2026-09-01 10:00:00
+    resolution_action_updated_date	    2026-09-01 10:00:00
+    due_date	                        2026-09-01 10:00:00
+    latitude	                        40.7
+    longitude	                        40.7
+    x_coordinate_state_plane	        40.7
+    y_coordinate_state_plane	        40.7
+    incident_zip	                    07302
+    """
+
+    out = convert_types(df)
+
+    #must be a real number
+    assert out["latitude"].dtype == "float64"
+
+    #check the first row still have to be text "07302"
+    assert out["incident_zip"].iloc[0] == "07302"
+
+    #chek if it converted to real datetime or not 
+    assert str(out["created_date"].dtype).startswith("datetime")
+
+
+
+#test 6  clean -> never drop rows
+def make_raw():
+    """Two fake raw rows with every column the pipeline touches, all text."""
+    df = pd.DataFrame({col: ["2026-09-01 10:00:00", "2026-09-01 11:00:00"] for col in DATE_COLUMNS})
+
+    for col in NUMBER_COLUMNS:
+        df[col] = ["40.7", "40.8"]
+
+    for col, word in PLACEHOLDER_COLUMNS.items():
+        df[col] = [word, "real"]
+
+    df["complaint_type"] = ["Plumbing", "PLUMBING"]
+    df["status"] = ["Closed", "Open"]
+    df["incident_zip"] = ["07302", "10001"]
+
+    return df
+
+
+def test_clean_keeps_every_row():
+    raw = make_raw()
+    out = clean(raw)
+
+    assert len(out) == 2
+
+    # new collumn has :complaint_type_clean,closed_date_suspect, closed_before_created, coord_pair_incomplete
+    # added :add_complaint_type_clean, add_flags, add_flags, add_flags -> add 4
+    assert len(out.columns) == len(raw.columns) + 4
