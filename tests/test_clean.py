@@ -134,3 +134,12 @@ def test_clean_keeps_every_row():
     # new collumn has :complaint_type_clean,closed_date_suspect, closed_before_created, coord_pair_incomplete
     # added :add_complaint_type_clean, add_flags, add_flags, add_flags -> add 4
     assert len(out.columns) == len(raw.columns) + 4
+
+
+#test 7 running clean twice gives the same result
+
+def test_clean_is_idempotent():
+    once = clean(make_raw())
+    twice = clean(once)
+    pd.testing.assert_frame_equal(once, twice)
+    # NEW: assert_frame_equal fails with a clear message unless two tables are identical: same columns, same values, same types.
