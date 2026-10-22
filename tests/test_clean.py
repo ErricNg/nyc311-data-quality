@@ -1,5 +1,9 @@
 import pandas as pd
 
+import pandera.pandas as pa
+
+from src.nyc311.schema import schema
+
 import pytest 
 from src.nyc311.clean import PLACEHOLDER_COLUMNS, placeholders_to_missing, add_complaint_type_clean , add_flags , load_raw , DATE_COLUMNS, NUMBER_COLUMNS, convert_types, clean
 """
@@ -7,6 +11,11 @@ pattern for checking :
 df =... the input we made 
 out= function(df) what the function gives us 
 assert  check the function whether the function give us the right answer or not 
+"""
+
+
+"""
+Test the clean.py
 """
 
 
@@ -139,7 +148,37 @@ def test_clean_keeps_every_row():
 #test 7 running clean twice gives the same result
 
 def test_clean_is_idempotent():
+    #clean fake raw table
     once = clean(make_raw())
+
+    #clean again
     twice = clean(once)
+
+    #compare if 2 of them are identical 
     pd.testing.assert_frame_equal(once, twice)
-    # NEW: assert_frame_equal fails with a clear message unless two tables are identical: same columns, same values, same types.
+
+
+"""
+test the schema
+"""
+
+def make_good():
+    """A tiny table that follows every schema rule."""
+    return pd.DataFrame({
+        "unique_key": ["1", "2"],
+        "incident_zip": ["10001", None],
+        "borough": ["QUEENS", None],
+        "latitude": [40.7, 40.8],
+        "longitude": [-73.9, -73.8],
+        "closed_date_suspect": [False, True],
+    })
+
+
+def test_schema_catches_bad_zip():
+    good = make_good()
+    schema.validate(good)
+    # NEW: if validate finds no problem, it returns quietly. A problem raises an error, which would fail this test.
+    bad = good.copy()
+    bad["incident_zip"] = ["1000", None]
+    with pytest.raises(pa.errors.SchemaError):
+        schema.validate(bad)
