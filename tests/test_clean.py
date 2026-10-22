@@ -195,7 +195,7 @@ def test_schema_catches_bad_zip():
         schema.validate(bad)
 
 
-# test if status unspecified is kept 
+# test 9 if status unspecified is kept 
 def test_status_unspecified_is_kept():
     df = make_raw().assign(status=["Unspecified", "Open"])
     #old status row 0 ->closed , row 1 -> open
@@ -204,3 +204,21 @@ def test_status_unspecified_is_kept():
     out = placeholders_to_missing(df)
     assert out["status"].iloc[0] == "Unspecified"
     assert out["status"].isna().sum() == 0
+
+
+#test 10 load raw keep words and leading zero
+"""checking if load_raw that nothing was changed on the way in: 
+07302 keeps its "0" in 07302, N/A stays as the word, and the empty cell stays empty"""
+
+def test_load_raw_keeps_words_and_zeros(tmp_path):
+    # make a temporary folder to test without touching the raw data 
+
+    file = tmp_path / "raw.csv"
+
+    file.write_text("incident_zip,city,closed_date\n07302,N/A,\n")
+
+    df = load_raw(file)
+
+    assert df["incident_zip"].iloc[0] == "07302"
+    assert df["city"].iloc[0] == "N/A"
+    assert df["closed_date"].isna().sum() == 1
