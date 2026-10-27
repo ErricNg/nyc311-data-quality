@@ -8,7 +8,7 @@ REPORT_PATH = Path("QUALITY_REPORT.md")
 
 
 def build_report(raw, cleaned):
-    """Return a markdown table of before/after counts."""
+    """Return a markdown table of before/after clean counts."""
     rows = [
         ("rows", len(raw), len(cleaned)),
         ("borough 'Unspecified'", (raw["borough"] == "Unspecified").sum(),
