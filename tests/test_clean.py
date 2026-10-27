@@ -1,11 +1,20 @@
 import pandas as pd
-
 import pandera.pandas as pa
+import pytest
 
+from src.nyc311.clean import (
+    DATE_COLUMNS,
+    NUMBER_COLUMNS,
+    PLACEHOLDER_COLUMNS,
+    add_complaint_type_clean,
+    add_flags,
+    clean,
+    convert_types,
+    load_raw,
+    placeholders_to_missing,
+)
 from src.nyc311.schema import schema
 
-import pytest 
-from src.nyc311.clean import PLACEHOLDER_COLUMNS, placeholders_to_missing, add_complaint_type_clean , add_flags , load_raw , DATE_COLUMNS, NUMBER_COLUMNS, convert_types, clean
 """
 pattern for checking :
 df =... the input we made 

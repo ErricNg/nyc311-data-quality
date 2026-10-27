@@ -1,9 +1,8 @@
-import pandera.pandas as pa
 #pandera-> rules clean table must follow 
-
 import pandas as pd
-from src.nyc311.clean import OUT_PATH, RAW_PATH, load_raw
+import pandera.pandas as pa
 
+from src.nyc311.clean import OUT_PATH, RAW_PATH, load_raw
 
 BOROUGHS = ["BROOKLYN", "QUEENS", "MANHATTAN", "BRONX", "STATEN ISLAND"]
 
